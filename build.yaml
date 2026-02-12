@@ -18,7 +18,7 @@ jobs:
       - name: Checkout Kernel Source
         run: |
           # Ganti link git di bawah dengan source kernel X00TD yang ingin kamu build
-          git clone --depth=1 https://github.com/lineageos/android_kernel_asus_sdm604 -b lineage-18.1 source
+          git clone --depth=1 https://github.com/SonicBSV/android_device_asus_X00TD-4.19.git -b lineage-21RetrofitDynParts source
           
       - name: Start Compilation
         run: |
