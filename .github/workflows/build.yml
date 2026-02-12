@@ -1,30 +1,32 @@
-name: Build Kernel X00TD Auto-Branch
+name: Build Kernel X00TD Final
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # Menggunakan versi Ubuntu yang lebih stabil untuk kernel lama
     steps:
       - name: Setup Env
         run: |
           sudo apt-get update
           sudo apt-get install -y bc build-essential zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev binutils-aarch64-linux-gnu libelf-dev
 
-      - name: Clone Toolchain (Proton Clang)
-        run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
-
-      - name: Clone Kernel Source (Default Branch)
+      - name: Clone Toolchain (AOSP Clang)
         run: |
-          # Tanpa -b, git akan otomatis mengambil branch utama (main/master/apa saja yang aktif)
+          # Mengunduh AOSP Clang yang lebih kompatibel
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang-aosp
+
+      - name: Clone Kernel Source
+        run: |
           git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19 source
 
       - name: Build Kernel
         run: |
           cd source
-          export PATH=$(pwd)/../clang/bin:$PATH
+          # Mengatur path ke compiler AOSP Clang
+          export PATH=$(pwd)/../clang-aosp/clang-r383902/bin:$PATH
           
-          # Cek apakah file config ada, jika tidak pakai sdm660 sebagai fallback
+          # Cek defconfig
           if [ -f arch/arm64/configs/X00TD_defconfig ]; then
               CONF=X00TD_defconfig
           else
@@ -35,14 +37,13 @@ jobs:
           make -j$(nproc --all) O=out \
                       ARCH=arm64 \
                       CC=clang \
+                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       CROSS_COMPILE=aarch64-linux-gnu- \
-                      CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-                      AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip
+                      CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Package ZIP
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          # Cari file Image hasil build (bisa Image.gz atau Image.gz-dtb)
           find source/out/arch/arm64/boot/ -name "Image.gz*" -exec cp {} AnyKernel3/ \;
           cd AnyKernel3
           zip -r9 Kernel-X00TD-Final.zip *
@@ -50,5 +51,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel-X00TD-Selesai
+          name: Kernel-X00TD-Result
           path: AnyKernel3/Kernel-X00TD-Final.zip
