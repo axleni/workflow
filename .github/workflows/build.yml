@@ -11,8 +11,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc build-essential zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev binutils-aarch64-linux-gnu libelf-dev
 
-      - name: Clone Toolchain
-        run: git clone --depth=1 https://gitlab.com/Pojak007/azure-clang clang
+      - name: Clone Toolchain (Proton Clang)
+        run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 
       - name: Clone Kernel Source
         run: git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19.git -b 4.19-old source
@@ -21,7 +21,6 @@ jobs:
         run: |
           cd source
           export PATH=$(pwd)/../clang/bin:$PATH
-          # Menggunakan X00TD_defconfig sesuai standar source SonicBSV
           make O=out ARCH=arm64 X00TD_defconfig
           make -j$(nproc --all) O=out \
                       ARCH=arm64 \
@@ -33,7 +32,6 @@ jobs:
       - name: Package ZIP
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          # Pada kernel 4.19, biasanya hasilnya ada di folder ini
           cp source/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp source/out/arch/arm64/boot/Image.gz AnyKernel3/
           cd AnyKernel3
           zip -r9 Kernel-X00TD-4.19.zip *
