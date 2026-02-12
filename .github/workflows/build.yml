@@ -15,7 +15,7 @@ jobs:
         run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 
       - name: Clone Kernel Source
-        run: git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19.git -b 4.19-old source
+        run: git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19.git -b Ratibor-Rebase-U source
 
       - name: Build Kernel
         run: |
