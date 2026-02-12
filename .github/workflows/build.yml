@@ -1,4 +1,4 @@
-name: Build Kernel X00TD 4.19
+name: Build Kernel X00TD Auto-Branch
 on:
   workflow_dispatch:
 
@@ -14,14 +14,24 @@ jobs:
       - name: Clone Toolchain (Proton Clang)
         run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 
-      - name: Clone Kernel Source
-        run: git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19.git -b Ratibor-Lineage source
+      - name: Clone Kernel Source (Default Branch)
+        run: |
+          # Tanpa -b, git akan otomatis mengambil branch utama (main/master/apa saja yang aktif)
+          git clone --depth=1 https://github.com/SonicBSV/android_kernel_asus_sdm660-4.19 source
 
       - name: Build Kernel
         run: |
           cd source
           export PATH=$(pwd)/../clang/bin:$PATH
-          make O=out ARCH=arm64 X00TD_defconfig
+          
+          # Cek apakah file config ada, jika tidak pakai sdm660 sebagai fallback
+          if [ -f arch/arm64/configs/X00TD_defconfig ]; then
+              CONF=X00TD_defconfig
+          else
+              CONF=sdm660_defconfig
+          fi
+          
+          make O=out ARCH=arm64 $CONF
           make -j$(nproc --all) O=out \
                       ARCH=arm64 \
                       CC=clang \
@@ -32,12 +42,13 @@ jobs:
       - name: Package ZIP
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          cp source/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp source/out/arch/arm64/boot/Image.gz AnyKernel3/
+          # Cari file Image hasil build (bisa Image.gz atau Image.gz-dtb)
+          find source/out/arch/arm64/boot/ -name "Image.gz*" -exec cp {} AnyKernel3/ \;
           cd AnyKernel3
-          zip -r9 Kernel-X00TD-4.19.zip *
+          zip -r9 Kernel-X00TD-Final.zip *
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Hasil-Kernel-SonicBSV
-          path: AnyKernel3/Kernel-X00TD-4.19.zip
+          name: Kernel-X00TD-Selesai
+          path: AnyKernel3/Kernel-X00TD-Final.zip
