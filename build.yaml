@@ -1,0 +1,46 @@
+name: Build Kernel X00TD
+on:
+  workflow_dispatch: # Memungkinkan kamu klik tombol "Run" manual
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc build-essential zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev binutils-aarch64-linux-gnu
+
+      - name: Download Toolchain (Azure Clang)
+        run: |
+          git clone --depth=1 https://gitlab.com/Pojak007/azure-clang clang
+
+      - name: Checkout Kernel Source
+        run: |
+          # Ganti link git di bawah dengan source kernel X00TD yang ingin kamu build
+          git clone --depth=1 https://github.com/lineageos/android_kernel_asus_sdm604 -b lineage-18.1 source
+          
+      - name: Start Compilation
+        run: |
+          cd source
+          export PATH=$(pwd)/../clang/bin:$PATH
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          
+          # Defconfig standar X00TD biasanya: X00TD_defconfig atau sdm660_defconfig
+          make O=out X00TD_defconfig
+          make -j$(nproc --all) O=out \
+                      CC=clang \
+                      AR=llvm-ar \
+                      NM=llvm-nm \
+                      OBJCOPY=llvm-objcopy \
+                      OBJDUMP=llvm-objdump \
+                      STRIP=llvm-strip
+
+      - name: Upload Kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel-X00TD
+          path: source/out/arch/arm64/boot/Image.gz-dtb
